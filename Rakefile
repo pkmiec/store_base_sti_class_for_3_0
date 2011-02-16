@@ -16,8 +16,7 @@ Jeweler::Tasks.new do |gem|
   gem.homepage = "http://github.com/pkmiec/store_base_sti_class_for_3_0"
   gem.license = "MIT"
   gem.summary = %Q{
-    Modified ActiveRecord 3.0.x with the ability to store the actual class (instead of the base class) in polymorhic 
-    _type columns when using STI
+    Modifies ActiveRecord 3.0.x with the ability to store the actual class (instead of the base class) in polymorhic _type columns when using STI
   }
   gem.description = %Q{
     ActiveRecord has always stored the base class in polymorphic _type columns when using STI. This can have non-trivial
