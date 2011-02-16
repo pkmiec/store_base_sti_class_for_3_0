@@ -40,7 +40,7 @@ Gem::Specification.new do |s|
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}
-  s.summary = %q{Modified ActiveRecord 3.0.x with the ability to store the actual class (instead of the base class) in polymorhic  _type columns when using STI}
+  s.summary = %q{Modifies ActiveRecord 3.0.x with the ability to store the actual class (instead of the base class) in polymorhic _type columns when using STI}
   s.test_files = [
     "test/connection.rb",
     "test/helper.rb",
