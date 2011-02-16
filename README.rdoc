@@ -26,14 +26,14 @@ will output,
   #<Vendor id: 1, type: "Vendor" ...>
   #<Address id: 1, addressable_id: 1, addressable_type: 'Person' ...>
 
-Notice that <tt>addressable_type<tt> column is <tt>Person<tt> even though the actual class is <tt>Vendor<tt>. 
+Notice that addressable_type column is Person even though the actual class is Vendor. 
 
 Normally, this isn't a problem, however it can have negative performance characteristic in certain circumstances. The most obvious one is that
 a join with persons or an extra query is required to find out the actual type of addressable.
 
-This gem add <tt>ActiveRecord::Base.store_base_sti_class<tt> configuration option. It defaults to true for backwards compatibility. Setting it <tt>false<tt> will alter ActiveRecord's behavior to store the actual class in polymorphic _type columns when STI is used.
+This gem add ActiveRecord::Base.store_base_sti_class configuration option. It defaults to true for backwards compatibility. Setting it false will alter ActiveRecord's behavior to store the actual class in polymorphic _type columns when STI is used.
 
-In the example above, if the <tt>ActiveRecord::Base.store_base_sti_class<tt> is <tt>false<tt>, the output will be,
+In the example above, if the ActiveRecord::Base.store_base_sti_class is false, the output will be,
 
   #<Vendor id: 1, type: "Vendor" ...>
   #<Address id: 1, addressable_id: 1, addressable_type: 'Vendor' ...>
