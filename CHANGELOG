@@ -1,0 +1,2 @@
+0.0.2
+  - Fixed in_or_equals_sti_names to handle single sti names correctly (thanks to borama)
