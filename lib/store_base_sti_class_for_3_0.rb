@@ -25,7 +25,7 @@ class ActiveRecord::Base
         "= #{quote_value(base_class.sti_name)}"
       else
         names = sti_names.map { |name| quote_value(name) }
-        names.length > 1 ? "IN (#{names.join(',')})" : "= #{names}"
+        names.length > 1 ? "IN (#{names.join(',')})" : "= #{names.first}"
       end
     end
 
