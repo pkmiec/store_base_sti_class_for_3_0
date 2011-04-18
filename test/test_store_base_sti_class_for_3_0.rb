@@ -130,4 +130,13 @@ class TestStoreBaseStiNameFor30 < ActiveRecord::TestCase
     assert_equal post, tagging.taggable
   end
 
+  def test_finder_sql_is_supported
+    author       = Author.create!(:name => 'Bob')
+    post         = Post.create!(:title => 'Budget Forecasts Bigger 2011 Deficit', :author => author)
+    special_tag  = Tag.create!(:name => 'SpecialGeneral')
+    post.taggings.create(:tag => special_tag)
+
+    assert_equal [author], special_tag.authors
+  end
+
 end

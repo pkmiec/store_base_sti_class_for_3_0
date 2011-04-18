@@ -52,9 +52,9 @@ When changing this behavior you will have write a migration to update all of you
 
 == Notes
 
-The gem has been extracted out of https://github.com/pkmiec/rails/tree/store_base_sti_class_for_3_0_4 patch. It allows the functionality to be used in applications that include Rails as a gem.
+The gem has been originally extracted out of https://github.com/pkmiec/rails/tree/store_base_sti_class_for_3_0_4 patch. It allows the functionality to be used in applications that include Rails as a gem.
 
-I've tested this gem with Rails 3.0.3, 3.0.4, 3.0.5, and 3.0.6. Please let me know if you run into any problems.
+Currently, it works with Rails ~= 3.0.5.
 
 This gem will not work with Rails 3.1 as much of its ActiveRecord internals have been replaced with Arel. Similar but different changes need to be applied to Rails 3.1. Those changes will come.
 

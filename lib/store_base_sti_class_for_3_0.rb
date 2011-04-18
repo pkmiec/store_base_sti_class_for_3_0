@@ -123,18 +123,6 @@ module ActiveRecord
         end
       end
 
-      # Some databases impose a limit on the number of ids in a list (in Oracle its 1000)
-      # Make several smaller queries if necessary or make one query if the adapter supports it
-      def associated_records(ids)
-        # rails 3.0.4 introduced ids_in_list_limit
-        max_ids_in_a_list = (connection.respond_to?(:ids_in_list_limit) ? connection.ids_in_list_limit : nil) || ids.size
-        records = []
-        ids.each_slice(max_ids_in_a_list) do |some_ids|
-          records += yield(some_ids)
-        end
-        records
-      end
-
     end
   end
 end
@@ -150,7 +138,7 @@ module ActiveRecord
         
         case
           when @reflection.options[:finder_sql]
-            @finder_sql = interpolate_sql(@reflection.options[:finder_sql])
+            @finder_sql = interpolate_and_sanitize_sql(@reflection.options[:finder_sql])
 
           when @reflection.options[:as]
             @finder_sql =
@@ -464,7 +452,7 @@ module ActiveRecord
 
             [through_reflection, reflection].each do |ref|
               if ref && ref.options[:conditions]
-                @join << interpolate_sql(sanitize_sql(ref.options[:conditions], aliased_table_name))
+                @join << interpolate_and_sanitize_sql(ref.options[:conditions], aliased_table_name)
               end
             end
 
