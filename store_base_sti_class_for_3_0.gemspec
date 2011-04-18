@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{store_base_sti_class_for_3_0}
-  s.version = "0.0.2"
+  s.version = "0.1.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Paul Kmiec"]
-  s.date = %q{2011-02-21}
+  s.date = %q{2011-04-18}
   s.description = %q{
     ActiveRecord has always stored the base class in polymorphic _type columns when using STI. This can have non-trivial
     performance implications in certain cases. This gem adds 'store_base_sti_class' configuration options which controls
@@ -55,20 +55,20 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<activerecord>, ["~> 3.0.3"])
+      s.add_runtime_dependency(%q<activerecord>, ["~> 3.0.5"])
       s.add_runtime_dependency(%q<mysql2>, [">= 0"])
       s.add_development_dependency(%q<bundler>, ["~> 1.0.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.5.2"])
       s.add_development_dependency(%q<rcov>, [">= 0"])
     else
-      s.add_dependency(%q<activerecord>, ["~> 3.0.3"])
+      s.add_dependency(%q<activerecord>, ["~> 3.0.5"])
       s.add_dependency(%q<mysql2>, [">= 0"])
       s.add_dependency(%q<bundler>, ["~> 1.0.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.5.2"])
       s.add_dependency(%q<rcov>, [">= 0"])
     end
   else
-    s.add_dependency(%q<activerecord>, ["~> 3.0.3"])
+    s.add_dependency(%q<activerecord>, ["~> 3.0.5"])
     s.add_dependency(%q<mysql2>, [">= 0"])
     s.add_dependency(%q<bundler>, ["~> 1.0.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.5.2"])
