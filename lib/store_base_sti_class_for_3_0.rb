@@ -452,7 +452,7 @@ module ActiveRecord
 
             [through_reflection, reflection].each do |ref|
               if ref && ref.options[:conditions]
-                @join << interpolate_and_sanitize_sql(ref.options[:conditions], aliased_table_name)
+                @join << process_conditions(ref.options[:conditions], aliased_table_name)
               end
             end
 
