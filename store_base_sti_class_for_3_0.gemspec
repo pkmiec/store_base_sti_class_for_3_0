@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{store_base_sti_class_for_3_0}
-  s.version = "0.1.0"
+  s.version = "0.1.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Paul Kmiec"]
-  s.date = %q{2011-04-18}
+  s.date = %q{2011-04-19}
   s.description = %q{
     ActiveRecord has always stored the base class in polymorphic _type columns when using STI. This can have non-trivial
     performance implications in certain cases. This gem adds 'store_base_sti_class' configuration options which controls
