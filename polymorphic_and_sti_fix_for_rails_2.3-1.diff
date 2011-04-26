@@ -1,0 +1,436 @@
+diff --git a/activerecord/lib/active_record/association_preload.rb b/activerecord/lib/active_record/association_preload.rb
+index af80a57..c8618f9 100644
+--- a/activerecord/lib/active_record/association_preload.rb
++++ b/activerecord/lib/active_record/association_preload.rb
+@@ -350,10 +350,10 @@ module ActiveRecord
+         table_name = reflection.klass.quoted_table_name
+ 
+         if interface = reflection.options[:as]
+-          conditions = "#{reflection.klass.quoted_table_name}.#{connection.quote_column_name "#{interface}_id"} #{in_or_equals_for_ids(ids)} and #{reflection.klass.quoted_table_name}.#{connection.quote_column_name "#{interface}_type"} = '#{self.base_class.sti_name}'"
++          conditions = "#{table_name}.#{connection.quote_column_name "#{interface}_id"} #{in_or_equals_for_ids(ids)} and #{table_name}.#{connection.quote_column_name "#{interface}_type"} = '#{self.sti_name}'"
+         else
+           foreign_key = reflection.primary_key_name
+-          conditions = "#{reflection.klass.quoted_table_name}.#{foreign_key} #{in_or_equals_for_ids(ids)}"
++          conditions = "#{table_name}.#{foreign_key} #{in_or_equals_for_ids(ids)}"
+         end
+ 
+         conditions << append_conditions(reflection, preload_options)
+diff --git a/activerecord/lib/active_record/associations.rb b/activerecord/lib/active_record/associations.rb
+index 157716a..5769573 100755
+--- a/activerecord/lib/active_record/associations.rb
++++ b/activerecord/lib/active_record/associations.rb
+@@ -1380,7 +1380,7 @@ module ActiveRecord
+             # Add polymorphic type if the :as option is present
+             dependent_conditions = []
+             dependent_conditions << "#{reflection.primary_key_name} = \#{record.quoted_id}"
+-            dependent_conditions << "#{reflection.options[:as]}_type = '#{base_class.name}'" if reflection.options[:as]
++            dependent_conditions << "#{reflection.options[:as]}_type = '#{sti_name}'" if reflection.options[:as]
+             dependent_conditions << sanitize_sql(reflection.options[:conditions], reflection.quoted_table_name) if reflection.options[:conditions]
+             dependent_conditions << extra_conditions if extra_conditions
+             dependent_conditions = dependent_conditions.collect {|where| "(#{where})" }.join(" AND ")
+@@ -2053,7 +2053,7 @@ module ActiveRecord
+                         jt_as_extra = " AND %s.%s = %s" % [
+                           connection.quote_table_name(aliased_join_table_name),
+                           connection.quote_column_name(through_reflection.options[:as].to_s + '_type'),
+-                          klass.quote_value(parent.active_record.base_class.name)
++                          klass.quote_value(parent.active_record.sti_name)
+                         ]
+                       else
+                         jt_foreign_key = through_reflection.primary_key_name
+@@ -2067,7 +2067,7 @@ module ActiveRecord
+                           as_extra    = " AND %s.%s = %s" % [
+                             connection.quote_table_name(aliased_table_name),
+                             connection.quote_column_name("#{source_reflection.options[:as]}_type"),
+-                            klass.quote_value(source_reflection.active_record.base_class.name)
++                            klass.quote_value(source_reflection.active_record.sti_name)
+                           ]
+                         else
+                           first_key   = through_reflection.klass.base_class.to_s.foreign_key
+@@ -2120,7 +2120,7 @@ module ActiveRecord
+                         parent.primary_key,
+                         connection.quote_table_name(aliased_table_name),
+                         "#{reflection.options[:as]}_type",
+-                        klass.quote_value(parent.active_record.base_class.name)
++                        klass.quote_value(parent.active_record.sti_name)
+                       ]
+                     else
+                       foreign_key = options[:foreign_key] || reflection.active_record.name.foreign_key
+diff --git a/activerecord/lib/active_record/associations/association_proxy.rb b/activerecord/lib/active_record/associations/association_proxy.rb
+index e36b04e..74694ec 100644
+--- a/activerecord/lib/active_record/associations/association_proxy.rb
++++ b/activerecord/lib/active_record/associations/association_proxy.rb
+@@ -179,7 +179,7 @@ module ActiveRecord
+         def set_belongs_to_association_for(record)
+           if @reflection.options[:as]
+             record["#{@reflection.options[:as]}_id"]   = @owner.id unless @owner.new_record?
+-            record["#{@reflection.options[:as]}_type"] = @owner.class.base_class.name.to_s
++            record["#{@reflection.options[:as]}_type"] = @owner.class.sti_name.to_s
+           else
+             unless @owner.new_record?
+               primary_key = @reflection.options[:primary_key] || :id
+diff --git a/activerecord/lib/active_record/associations/belongs_to_polymorphic_association.rb b/activerecord/lib/active_record/associations/belongs_to_polymorphic_association.rb
+index d8146da..360d57e 100644
+--- a/activerecord/lib/active_record/associations/belongs_to_polymorphic_association.rb
++++ b/activerecord/lib/active_record/associations/belongs_to_polymorphic_association.rb
+@@ -8,7 +8,7 @@ module ActiveRecord
+           @target = (AssociationProxy === record ? record.target : record)
+ 
+           @owner[@reflection.primary_key_name] = record.id
+-          @owner[@reflection.options[:foreign_type]] = record.class.base_class.name.to_s
++          @owner[@reflection.options[:foreign_type]] = record.class.sti_name.to_s
+ 
+           @updated = true
+         end
+diff --git a/activerecord/lib/active_record/associations/has_many_association.rb b/activerecord/lib/active_record/associations/has_many_association.rb
+index 73dd50d..1bccf26 100644
+--- a/activerecord/lib/active_record/associations/has_many_association.rb
++++ b/activerecord/lib/active_record/associations/has_many_association.rb
+@@ -89,9 +89,9 @@ module ActiveRecord
+             when @reflection.options[:as]
+               @finder_sql = 
+                 "#{@reflection.quoted_table_name}.#{@reflection.options[:as]}_id = #{owner_quoted_id} AND " +
+-                "#{@reflection.quoted_table_name}.#{@reflection.options[:as]}_type = #{@owner.class.quote_value(@owner.class.base_class.name.to_s)}"
++                "#{@reflection.quoted_table_name}.#{@reflection.options[:as]}_type = #{@owner.class.quote_value(@owner.class.sti_name.to_s)}"
+               @finder_sql << " AND (#{conditions})" if conditions
+-            
++
+             else
+               @finder_sql = "#{@reflection.quoted_table_name}.#{@reflection.primary_key_name} = #{owner_quoted_id}"
+               @finder_sql << " AND (#{conditions})" if conditions
+diff --git a/activerecord/lib/active_record/associations/has_many_through_association.rb b/activerecord/lib/active_record/associations/has_many_through_association.rb
+index e8dbae9..34f17d1 100644
+--- a/activerecord/lib/active_record/associations/has_many_through_association.rb
++++ b/activerecord/lib/active_record/associations/has_many_through_association.rb
+@@ -89,7 +89,7 @@ module ActiveRecord
+         def construct_owner_attributes(reflection)
+           if as = reflection.options[:as]
+             { "#{as}_id" => @owner.id,
+-              "#{as}_type" => @owner.class.base_class.name.to_s }
++              "#{as}_type" => @owner.class.sti_name.to_s }
+           else
+             { reflection.primary_key_name => @owner.id }
+           end
+@@ -101,7 +101,7 @@ module ActiveRecord
+           raise ActiveRecord::HasManyThroughCantAssociateThroughHasManyReflection.new(@owner, @reflection) if @reflection.source_reflection.macro == :has_many
+           join_attributes = construct_owner_attributes(@reflection.through_reflection).merge(@reflection.source_reflection.primary_key_name => associate.id)
+           if @reflection.options[:source_type]
+-            join_attributes.merge!(@reflection.source_reflection.options[:foreign_type] => associate.class.base_class.name.to_s)
++            join_attributes.merge!(@reflection.source_reflection.options[:foreign_type] => associate.class.sti_name.to_s)
+           end
+           join_attributes
+         end
+@@ -111,7 +111,7 @@ module ActiveRecord
+           if as = reflection.options[:as]
+             { "#{as}_id" => owner_quoted_id,
+               "#{as}_type" => reflection.klass.quote_value(
+-                @owner.class.base_class.name.to_s,
++                @owner.class.sti_name.to_s,
+                 reflection.klass.columns_hash["#{as}_type"]) }
+           elsif reflection.macro == :belongs_to
+             { reflection.klass.primary_key => @owner[reflection.primary_key_name] }
+diff --git a/activerecord/lib/active_record/associations/has_one_association.rb b/activerecord/lib/active_record/associations/has_one_association.rb
+index b72b843..9dde2a8 100644
+--- a/activerecord/lib/active_record/associations/has_one_association.rb
++++ b/activerecord/lib/active_record/associations/has_one_association.rb
+@@ -90,7 +90,7 @@ module ActiveRecord
+             when @reflection.options[:as]
+               @finder_sql = 
+                 "#{@reflection.quoted_table_name}.#{@reflection.options[:as]}_id = #{owner_quoted_id} AND " +
+-                "#{@reflection.quoted_table_name}.#{@reflection.options[:as]}_type = #{@owner.class.quote_value(@owner.class.base_class.name.to_s)}"
++                "#{@reflection.quoted_table_name}.#{@reflection.options[:as]}_type = #{@owner.class.quote_value(@owner.class.sti_name.to_s)}"
+             else
+               @finder_sql = "#{@reflection.quoted_table_name}.#{@reflection.primary_key_name} = #{owner_quoted_id}"
+           end
+diff --git a/activerecord/lib/active_record/autosave_association.rb b/activerecord/lib/active_record/autosave_association.rb
+index a540570..e8b3ac2 100644
+--- a/activerecord/lib/active_record/autosave_association.rb
++++ b/activerecord/lib/active_record/autosave_association.rb
+@@ -342,7 +342,7 @@ module ActiveRecord
+             self[reflection.primary_key_name] = association.id
+             # TODO: Removing this code doesn't seem to matter…
+             if reflection.options[:polymorphic]
+-              self[reflection.options[:foreign_type]] = association.class.base_class.name.to_s
++              self[reflection.options[:foreign_type]] = association.class.sti_name.to_s
+             end
+           end
+         end
+diff --git a/activerecord/test/cases/associations/eager_load_includes_full_sti_class_test.rb b/activerecord/test/cases/associations/eager_load_includes_full_sti_class_test.rb
+index 7c47061..094e127 100644
+--- a/activerecord/test/cases/associations/eager_load_includes_full_sti_class_test.rb
++++ b/activerecord/test/cases/associations/eager_load_includes_full_sti_class_test.rb
+@@ -25,11 +25,12 @@ class EagerLoadIncludeFullStiClassNamesTest < ActiveRecord::TestCase
+ 
+     ActiveRecord::Base.store_full_sti_class = false
+     post = Namespaced::Post.find_by_title( 'Great stuff', :include => :tagging )
+-    assert_nil post.tagging
++    assert_equal 'Post', post.tagging.taggable_type
++    assert_equal 'Tagging', post.tagging.class.name
+ 
+     ActiveRecord::Base.store_full_sti_class = true
+     post = Namespaced::Post.find_by_title( 'Great stuff', :include => :tagging )
+-    assert_equal 'Tagging', post.tagging.class.name
++    assert_nil post.tagging
+   ensure
+     ActiveRecord::Base.store_full_sti_class = old
+   end
+diff --git a/activerecord/test/cases/associations/eager_test.rb b/activerecord/test/cases/associations/eager_test.rb
+index 4cf49be..c2946bb 100644
+--- a/activerecord/test/cases/associations/eager_test.rb
++++ b/activerecord/test/cases/associations/eager_test.rb
+@@ -599,7 +599,7 @@ class EagerAssociationTest < ActiveRecord::TestCase
+ 
+   def test_polymorphic_type_condition
+     post = Post.find(posts(:thinking).id, :include => :taggings)
+-    assert post.taggings.include?(taggings(:thinking_general))
++    assert !post.taggings.include?(taggings(:thinking_general))
+     post = SpecialPost.find(posts(:thinking).id, :include => :taggings)
+     assert post.taggings.include?(taggings(:thinking_general))
+   end
+@@ -747,12 +747,12 @@ class EagerAssociationTest < ActiveRecord::TestCase
+     posts = assert_queries(2) do
+       Post.find(:all, :include => :author, :joins => {:taggings => :tag}, :conditions => "tags.name = 'General'", :order => 'posts.id')
+     end
+-    assert_equal posts(:welcome, :thinking), posts
++    assert_equal [posts(:welcome)], posts
+ 
+     posts = assert_queries(2) do
+       Post.find(:all, :include => :author, :joins => {:taggings => {:tag => :taggings}}, :conditions => "taggings_tags.super_tag_id=2", :order => 'posts.id')
+     end
+-    assert_equal posts(:welcome, :thinking), posts
++    assert_equal [posts(:welcome)], posts
+ 
+   end
+ 
+diff --git a/activerecord/test/cases/associations/has_one_associations_test.rb b/activerecord/test/cases/associations/has_one_associations_test.rb
+index 7140de7..18d6630 100644
+--- a/activerecord/test/cases/associations/has_one_associations_test.rb
++++ b/activerecord/test/cases/associations/has_one_associations_test.rb
+@@ -2,9 +2,11 @@ require "cases/helper"
+ require 'models/developer'
+ require 'models/project'
+ require 'models/company'
++require 'models/organization'
++require 'models/sponsor'
+ 
+ class HasOneAssociationsTest < ActiveRecord::TestCase
+-  fixtures :accounts, :companies, :developers, :projects, :developers_projects
++  fixtures :accounts, :companies, :developers, :projects, :developers_projects, :organizations, :sponsors
+ 
+   def setup
+     Account.destroyed_account_ids.clear
+@@ -306,4 +308,12 @@ class HasOneAssociationsTest < ActiveRecord::TestCase
+       Firm.find(@firm.id, :include => :account).save!
+     end
+   end
++
++  def test_sti_has_one_to_polymorphic
++    assert_equal sponsors(:generous_sponsor), organizations(:needy).sponsor
++  end
++
++  def test_polymorphic_to_sti_has_one
++    assert_equal organizations(:needy), sponsors(:generous_sponsor).sponsorable
++  end
+ end
+diff --git a/activerecord/test/cases/associations/join_model_test.rb b/activerecord/test/cases/associations/join_model_test.rb
+index b1060d0..c870085 100644
+--- a/activerecord/test/cases/associations/join_model_test.rb
++++ b/activerecord/test/cases/associations/join_model_test.rb
+@@ -121,10 +121,12 @@ class AssociationsJoinModelTest < ActiveRecord::TestCase
+   end
+ 
+   def test_polymorphic_has_many_going_through_join_model_with_inheritance
++    posts(:thinking).taggings << tags(:general).taggings.create
+     assert_equal tags(:general), posts(:thinking).tags.first
+   end
+ 
+   def test_polymorphic_has_many_going_through_join_model_with_inheritance_with_custom_class_name
++    posts(:thinking).taggings << tags(:general).taggings.create
+     assert_equal tags(:general), posts(:thinking).funky_tags.first
+   end
+ 
+@@ -133,26 +135,38 @@ class AssociationsJoinModelTest < ActiveRecord::TestCase
+     assert_instance_of SpecialPost, post
+ 
+     tagging = tags(:misc).taggings.create(:taggable => post)
+-    assert_equal "Post", tagging.taggable_type
++    assert_equal "SpecialPost", tagging.taggable_type
+   end
+ 
+   def test_polymorphic_has_one_create_model_with_inheritance
+     tagging = tags(:misc).create_tagging(:taggable => posts(:thinking))
+-    assert_equal "Post", tagging.taggable_type
++    assert_equal "SpecialPost", tagging.taggable_type
+   end
+ 
+   def test_set_polymorphic_has_many
+     tagging = tags(:misc).taggings.create
+-    posts(:thinking).taggings << tagging
++    posts(:welcome).taggings << tagging
+     assert_equal "Post", tagging.taggable_type
+   end
+ 
+   def test_set_polymorphic_has_one
+     tagging = tags(:misc).taggings.create
+-    posts(:thinking).tagging = tagging
++    posts(:welcome).tagging = tagging
+     assert_equal "Post", tagging.taggable_type
+   end
+ 
++  def test_set_polymorphic_has_many_with_sti_owner
++    tagging = tags(:misc).taggings.create
++    posts(:thinking).taggings << tagging
++    assert_equal "SpecialPost", tagging.taggable_type
++  end
++
++  def test_set_polymorphic_has_one_with_sti_owner
++    tagging = tags(:misc).taggings.create
++    posts(:thinking).tagging = tagging
++    assert_equal "SpecialPost", tagging.taggable_type
++  end
++
+   def test_create_polymorphic_has_many_with_scope
+     old_count = posts(:welcome).taggings.count
+     tagging = posts(:welcome).taggings.create(:tag => tags(:misc))
+@@ -259,8 +273,8 @@ class AssociationsJoinModelTest < ActiveRecord::TestCase
+   end
+ 
+   def test_include_polymorphic_has_many_through
+-    posts           = Post.find(:all, :order => 'posts.id')
+-    posts_with_tags = Post.find(:all, :include => :tags, :order => 'posts.id')
++    posts           = Post.find(:all, :order => 'posts.id', :conditions => ['type = ?', 'Post'])
++    posts_with_tags = Post.find(:all, :include => :tags, :order => 'posts.id', :conditions => ['type = ?', 'Post'])
+     assert_equal posts.length, posts_with_tags.length
+     posts.length.times do |i|
+       assert_equal posts[i].tags.length, assert_no_queries { posts_with_tags[i].tags.length }
+@@ -268,8 +282,8 @@ class AssociationsJoinModelTest < ActiveRecord::TestCase
+   end
+ 
+   def test_include_polymorphic_has_many
+-    posts               = Post.find(:all, :order => 'posts.id')
+-    posts_with_taggings = Post.find(:all, :include => :taggings, :order => 'posts.id')
++    posts               = Post.find(:all, :order => 'posts.id', :conditions => ['type = ?', 'Post'])
++    posts_with_taggings = Post.find(:all, :include => :taggings, :order => 'posts.id', :conditions => ['type = ?', 'Post'])
+     assert_equal posts.length, posts_with_taggings.length
+     posts.length.times do |i|
+       assert_equal posts[i].taggings.length, assert_no_queries { posts_with_taggings[i].taggings.length }
+@@ -343,12 +357,12 @@ class AssociationsJoinModelTest < ActiveRecord::TestCase
+   end
+ 
+   def test_has_many_polymorphic_with_source_type
+-    assert_equal posts(:welcome, :thinking), tags(:general).tagged_posts
++    assert_equal [posts(:welcome)], tags(:general).tagged_posts
+   end
+ 
+   def test_eager_has_many_polymorphic_with_source_type
+     tag_with_include = Tag.find(tags(:general).id, :include => :tagged_posts)
+-    desired = posts(:welcome, :thinking)
++    desired = [posts(:welcome)]
+     assert_no_queries do
+       assert_equal desired, tag_with_include.tagged_posts
+     end
+@@ -381,12 +395,12 @@ class AssociationsJoinModelTest < ActiveRecord::TestCase
+   end
+ 
+   def test_has_many_through_polymorphic_has_many
+-    assert_equal taggings(:welcome_general, :thinking_general), authors(:david).taggings.uniq.sort_by { |t| t.id }
++    assert_equal [taggings(:welcome_general)], authors(:david).taggings.uniq.sort_by { |t| t.id }
+   end
+ 
+   def test_include_has_many_through_polymorphic_has_many
+     author            = Author.find_by_id(authors(:david).id, :include => :taggings)
+-    expected_taggings = taggings(:welcome_general, :thinking_general)
++    expected_taggings = [taggings(:welcome_general)]
+     assert_no_queries do
+       assert_equal expected_taggings, author.taggings.uniq.sort_by { |t| t.id }
+     end
+@@ -618,8 +632,8 @@ class AssociationsJoinModelTest < ActiveRecord::TestCase
+   end
+ 
+   def test_preload_polymorphic_has_many_through
+-    posts           = Post.find(:all, :order => 'posts.id')
+-    posts_with_tags = Post.find(:all, :include => :tags, :order => 'posts.id')
++    posts           = Post.find(:all, :order => 'posts.id', :conditions => ['type = ?', 'Post'])
++    posts_with_tags = Post.find(:all, :include => :tags, :order => 'posts.id', :conditions => ['type = ?', 'Post'])
+     assert_equal posts.length, posts_with_tags.length
+     posts.length.times do |i|
+       assert_equal posts[i].tags.length, assert_no_queries { posts_with_tags[i].tags.length }
+@@ -645,8 +659,8 @@ class AssociationsJoinModelTest < ActiveRecord::TestCase
+   end
+ 
+   def test_preload_polymorphic_has_many
+-    posts               = Post.find(:all, :order => 'posts.id')
+-    posts_with_taggings = Post.find(:all, :include => :taggings, :order => 'posts.id')
++    posts               = Post.find(:all, :order => 'posts.id', :conditions => ['type = ?', 'Post'])
++    posts_with_taggings = Post.find(:all, :include => :taggings, :order => 'posts.id', :conditions => ['type = ?', 'Post'])
+     assert_equal posts.length, posts_with_taggings.length
+     posts.length.times do |i|
+       assert_equal posts[i].taggings.length, assert_no_queries { posts_with_taggings[i].taggings.length }
+diff --git a/activerecord/test/fixtures/organizations.yml b/activerecord/test/fixtures/organizations.yml
+index 25295bf..7498a33 100644
+--- a/activerecord/test/fixtures/organizations.yml
++++ b/activerecord/test/fixtures/organizations.yml
+@@ -2,4 +2,6 @@ nsa:
+   name: No Such Agency
+ discordians:
+   name: Discordians
+-
++needy:
++  name: We Need Money
++  type: SponsorableOrganization
+\ No newline at end of file
+diff --git a/activerecord/test/fixtures/sponsors.yml b/activerecord/test/fixtures/sponsors.yml
+index 42df895..64aea4d 100644
+--- a/activerecord/test/fixtures/sponsors.yml
++++ b/activerecord/test/fixtures/sponsors.yml
+@@ -6,4 +6,6 @@ boring_club_sponsor_for_groucho:
+   sponsorable: some_other_guy (Member)
+ crazy_club_sponsor_for_groucho:
+   sponsor_club: crazy_club
+-  sponsorable: some_other_guy (Member)
+\ No newline at end of file
++  sponsorable: some_other_guy (Member)
++generous_sponsor:
++  sponsorable: needy (SponsorableOrganization)
+\ No newline at end of file
+diff --git a/activerecord/test/fixtures/taggings.yml b/activerecord/test/fixtures/taggings.yml
+index 1e3d596..01fd16a 100644
+--- a/activerecord/test/fixtures/taggings.yml
++++ b/activerecord/test/fixtures/taggings.yml
+@@ -9,7 +9,7 @@ thinking_general:
+   id: 2
+   tag_id: 1
+   taggable_id: 2
+-  taggable_type: Post
++  taggable_type: SpecialPost
+ 
+ fake: 
+   id: 3
+diff --git a/activerecord/test/models/organization.rb b/activerecord/test/models/organization.rb
+index d79d503..c537cd2 100644
+--- a/activerecord/test/models/organization.rb
++++ b/activerecord/test/models/organization.rb
+@@ -1,4 +1,8 @@
+ class Organization < ActiveRecord::Base
+   has_many :member_details
+   has_many :members, :through => :member_details
++end
++
++class SponsorableOrganization < Organization
++  has_one :sponsor, :as => :sponsorable
+ end
+\ No newline at end of file
+diff --git a/activerecord/test/schema/schema.rb b/activerecord/test/schema/schema.rb
+index b2aaccb..8d8b04f 100644
+--- a/activerecord/test/schema/schema.rb
++++ b/activerecord/test/schema/schema.rb
+@@ -284,6 +284,7 @@ ActiveRecord::Schema.define do
+ 
+   create_table :organizations, :force => true do |t|
+     t.string :name
++    t.string :type
+   end
+ 
+   create_table :owners, :primary_key => :owner_id ,:force => true do |t|
+-- 
+1.6.2.1
+

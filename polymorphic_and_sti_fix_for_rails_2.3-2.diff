@@ -1,0 +1,13 @@
+Index: activerecord/lib/active_record/associations/belongs_to_polymorphic_association.rb
+===================================================================
+--- activerecord/lib/active_record/associations/belongs_to_polymorphic_association.rb	(revision 1320)
++++ activerecord/lib/active_record/associations/belongs_to_polymorphic_association.rb	(working copy)
+@@ -8,7 +8,7 @@
+           @target = (AssociationProxy === record ? record.target : record)
+ 
+           @owner[@reflection.primary_key_name] = record_id(record)
+-          @owner[@reflection.options[:foreign_type]] = record.class.base_class.name.to_s
++          @owner[@reflection.options[:foreign_type]] = record.class.sti_name.to_s
+ 
+           @updated = true
+         end

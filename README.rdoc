@@ -58,6 +58,10 @@ Currently, it works with Rails ~> 3.0.5.
 
 This gem will not work with Rails 3.1 as much of its ActiveRecord internals have been replaced with Arel. Similar but different changes need to be applied to Rails 3.1. Those changes will come.
 
+== Still using Rails 2.3?
+
+A patch for Rails 2.3 existed which I used until I switched to Rails 3 (sorry, I don't know the original author of that Rails 2.3 patch). I've attached that patch in form of two diffs to this repo. See polymorphic_and_sti_fix_for_rails_2.3-1.diff and polymorphic_and_sti_fix_for_rails_2.3-2.diff. Note, I was using Rails 2.3.4 so YMMV with 2.3.11.
+
 == Copyright
 
 Copyright (c) 2011 Paul Kmiec. See LICENSE.txt for
