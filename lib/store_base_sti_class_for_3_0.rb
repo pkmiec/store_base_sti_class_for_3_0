@@ -1,4 +1,6 @@
 require 'active_record'
+
+if ActiveRecord::VERSION::STRING =~ /^3\.0/  
 require 'active_record/associations'
 require 'active_record/reflection'
 require 'active_record/association_preload'
@@ -463,4 +465,6 @@ module ActiveRecord
       end
     end
   end
+end
+
 end
